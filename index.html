@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    body {
+      background: url(./mycards/blackboard.png);
+      background-repeat: no-repeat;
+      background-size: 100vw 100vh;
+    }
+
+    .card {
+      width: 22%;
+      height: 21.5%;
+      position: relative;
+      top: 2%;
+      left: 2%;
+      float: left;
+      margin: 5px;
+      /* 設定子元素在 3D 空間內 */
+      transform-style: preserve-3d;
+      transition: transform 1s;
+    }
+
+    .card-front {
+      width: 100%;
+      height: 100%;
+      background-image: url(./mycards/voc1.png);
+      background-size: 100% 100%;
+      background-position: center;
+      background-repeat: no-repeat;
+      position: absolute;
+      /* 隱藏背面 */
+      backface-visibility: hidden;
+    }
+
+    .card-back {
+      width: 100%;
+      height: 100%;
+      background-image: url(./mycards/voc0.png);
+      background-size: 100% 100%;
+      background-position: center;
+      background-repeat: no-repeat;
+      position: absolute;
+      backface-visibility: hidden;
+      transform: rotateY(180deg);
+    }
+
+    .card-close {
+      transform: rotateY(180deg);
+    }
+
+    #game {
+      width: 42%;
+      height: 50%;
+      /* background: rgba(0, 0, 0, 0.5); */
+      position: absolute;
+      top: 8%;
+      left: 29.5%;
+    }
+
+    #start {
+      position: absolute;
+      top: 70%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 150px;
+      height: 75px;
+      border-radius: 5%;
+      box-shadow: 5px 5px 10px #333;
+    }
+
+    #start:hover {
+      background: lightgoldenrodyellow;
+    }
+
+    .conwawa {
+      position: absolute;
+      top: 30%;
+      left: 6%;
+      width: 20%;
+    }
+
+    .none {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="game"></div>
+  <audio src="./mymp3/voice1.mp3"></audio>
+  <input type="button" id="start" value="START">
+  <img src="./mycards/sticker_28.gif" class="conwawa none">
+
+  <script src="./jquery-3.6.4.min.js"></script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.3/sweetalert2.all.min.js'
+    integrity='sha512-/iBgV43zPirSC0tue+PT/1VHGs7En24twBmT+sVMgn9PTaOpKfbgIyL5YsGKlbAIxcwz9S8W/YEnYjpIYj2Axw=='
+    crossorigin='anonymous'></script>
+  <script>
+    //voice
+    for (let i = 1; i < 9; i++) {
+      $('body').append(`<audio src="./mymp3/voice${i}.mp3" id="voice${i}"></audio>`)
+    }
+
+    // 產生 16 張卡片
+
+    //按開始按鈕後
+    $('#start').click(function () {
+      $('#start').css('opacity', '0')
+      $(this).attr('disabled', true)
+      $('.conwawa').removeClass('none')
+      for (let i = 0; i < 16; i++) {
+        $('#game').append(`
+        <div class="card card-close">
+          <div class="card-front"></div>
+          <div class="card-back"></div>
+        </div>
+      `)
+      }
+      // 決定每張的數字
+      for (let i = 0; i < 16; i++) {
+        const num = i % 8 + 1
+        $('.card').eq(i).find('.card-front').css('background-image', `url(./mycards/voc${i + 1}.png)`)
+        $('.card').eq(i).attr('data-card', num)
+      }
+      // 打亂
+      for (let i = 0; i < 16; i++) {
+        const target = Math.round(Math.random() * 15)
+        $('.card').eq(target).insertAfter($('.card').eq(i))
+      }
+      let time = 0
+      let timer = setInterval(() => {
+        time++
+        console.log(time)
+        if ($('.card-ok').length === $('.card').length) {
+          $('.conwawa').addClass('none')
+          clearInterval(timer)
+        }
+      }, 1000); $('#game').on('click', '.card', function () {
+        const _this = this
+        if (
+          // 如果還沒翻開兩張
+          $('.card:not(.card-close)').length < 2 &&
+          // 且這張牌還沒翻開
+          $(this).hasClass('card-close') &&
+          // 且這張牌還沒配對
+          !$(this).hasClass('card-ok')
+        ) {
+          // 符合才翻開
+          $(this).removeClass('card-close')
+        }
+
+        // 如果翻開兩張了
+        if ($('.card:not(.card-close)').length === 2) {
+          // 檢查數字
+          if (
+            $('.card:not(.card-close)').eq(0).attr('data-card') ===
+            $('.card:not(.card-close)').eq(1).attr('data-card')
+          ) {
+            $('.card:not(.card-close)').addClass('card-ok')
+            $('.card:not(.card-close)').fadeTo(1000, 0)
+            $(`#voice${$(_this).attr('data-card')}`)[0].play()
+
+          }
+
+
+          // 不管數字是否一樣都翻回來
+
+
+          let timer2 = setTimeout(function () {
+            $('.card:not(.card-close)').addClass('card-close')
+            if ($('.card-ok').length === $('.card').length) {
+              Swal.fire({
+                icon: 'success',
+                title: '恭喜',
+                text: `恭喜過關 你花了${time}秒`
+              })
+              $('#start').attr('disabled', false)
+              $('#start').css('opacity', '1')
+              $('#game .card').remove()
+            }
+          }, 1000)
+        }
+      })
+    })
+
+  </script>
+</body>
+
+</html>
